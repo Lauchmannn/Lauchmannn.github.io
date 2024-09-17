@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win Challenge Overlay</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffffff; /* Weißer Hintergrund */
+            color: #ffffff; /* Weiße Schrift */
+            text-align: center;
+        }
+
+        .container {
+            margin: 20px;
+            padding: 20px;
+            background-color: #000000; /* Schwarzer Hintergrund */
+            border-radius: 10px; /* Runde Ecken */
+            display: inline-block;
+            width: 80%; /* Breite des Containers */
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #000000; /* Schwarze Schrift */
+            font-weight: normal;
+            font-size: 36px;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #ffffff;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+
+        /* Hauptzeit: Verkleinert und weiter nach unten verschoben */
+        .main-timer {
+            font-size: 36px; /* Kleinere Größe */
+            color: #ffffff;
+            text-align: center;
+            margin: 30px 0 10px 0; /* Mehr Abstand nach oben */
+            transition: color 0.5s ease; /* Sanfter Übergang bei Farbänderung */
+        }
+
+        .game-list-title {
+            margin-bottom: 20px;
+            font-size: 30px;
+            color: #ffffff;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #007bff; /* Blau */
+            color: #ffffff; /* Weiße Schrift */
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Dunkleres Blau beim Hovern */
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 400px;
+            margin: 10px 0;
+            color: #000000; /* Schwarzer Text */
+            background-color: #ffffff;
+        }
+
+        input::placeholder {
+            color: #888888; /* Grauer Placeholder */
+        }
+
+        .game-item {
+            margin-top: 10px;
+            background-color: #000000; /* Schwarzer Hintergrund für Spiel-Items */
+            padding: 10px;
+            border-radius: 5px;
+            color: #ffffff; /* Weiße Schrift */
+            display: flex;
+            justify-content: space-between; /* Abstand zwischen den Elementen */
+            align-items: center; /* Vertikale Zentrierung */
+            gap: 20px;
+        }
+
+        .game-item .name {
+            font-size: 18px;
+            font-weight: bold;
+            flex: 1; /* Spielname nimmt den meisten Platz ein */
+            text-align: left; /* Linksbündig */
+        }
+
+        .game-item .timer {
+            font-size: 18px; /* Kleinere Schrift für die Spiel-Timer */
+            min-width: 100px; /* Feste Mindestbreite für den Timer */
+            text-align: right; /* Rechtsbündig */
+        }
+
+        .game-buttons {
+            display: flex;
+            gap: 10px; /* Abstand zwischen den Buttons */
+            justify-content: flex-end; /* Gleiche Ausrichtung wie die Hauptzeit-Buttons */
+        }
+
+        .game-list {
+            margin-top: 10px; /* Weniger Abstand zum Haupttimer */
+        }
+
+        .completed {
+            color: #32CD32; /* Heller Grünton für abgeschlossene Spiele */
+        }
+
+        .hidden {
+            visibility: hidden; /* Versteckt die Knöpfe, ohne den Platz zu beeinflussen */
+        }
+
+        /* Hauptzeit und Knöpfe auf gleicher Breite und Ausrichtung */
+        .main-timer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px; /* Weniger Abstand nach unten */
+            gap: 10px;
+        }
+
+        /* Hauptzeit mittig über den Spielen */
+        .main-timer {
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        /* Haupttimer- und Spiel-Buttons ohne feste Breite */
+        .main-timer-buttons, .game-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end; /* Gleiche Ausrichtung für beide Button-Gruppen */
+        }
+
+        /* Hauptzeit grün nach Abschluss */
+        .main-timer.completed {
+            color: #32CD32; /* Heller Grünton für abgeschlossene Challenge */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Win Challenge</h1>
+
+    <!-- Spieleliste und Eingabe -->
+    <div class="container">
+        <h2 class="game-list-title">Spiele Liste</h2>
+        <input type="text" id="gameNameInput" placeholder="Spielname" />
+        <button onclick="addGame()">Spiel hinzufügen</button>
+
+        <!-- Hauptzeit mittig über den Namen und Buttons über den Spielknöpfen -->
+        <div class="main-timer-container">
+            <div id="mainTimer" class="main-timer">00:00:00</div>
+            <div class="main-timer-buttons">
+                <button onclick="startMainTimer()">Start</button>
+                <button onclick="pauseMainTimer()">Pause</button>
+                <button onclick="resetMainTimer()">Reset</button>
+                <button onclick="completeChallenge()">✅</button> <!-- Button zum Beenden der Challenge -->
+            </div>
+        </div>
+
+        <div id="gameList" class="game-list"></div>
+    </div>
+
+    <script>
+        let mainTimerInterval;
+        let mainTimerSeconds = 0;
+        let isMainTimerRunning = false;
+
+        // Haupttimer Funktionen
+        function startMainTimer() {
+            if (!isMainTimerRunning) {
+                isMainTimerRunning = true;
+                mainTimerInterval = setInterval(() => {
+                    mainTimerSeconds++;
+                    document.getElementById('mainTimer').textContent = formatTime(mainTimerSeconds);
+                }, 1000);
+            }
+        }
+
+        function pauseMainTimer() {
+            clearInterval(mainTimerInterval);
+            isMainTimerRunning = false;
+        }
+
+        function resetMainTimer() {
+            pauseMainTimer();
+            mainTimerSeconds = 0;
+            document.getElementById('mainTimer').textContent = "00:00:00";
+        }
+
+        function completeChallenge() {
+            // Hauptzeit grün färben und Challenge als erledigt markieren
+            document.getElementById('mainTimer').classList.add('completed');
+            pauseMainTimer(); // Timer anhalten
+        }
+
+        function formatTime(seconds) {
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        // Spiel hinzufügen
+        function addGame() {
+            const gameName = document.getElementById('gameNameInput').value.trim();
+            if (!gameName) {
+                alert("Bitte gib einen Spielnamen ein.");
+                return;
+            }
+
+            const gameId = Date.now();
+            const gameElement = document.createElement('div');
+            gameElement.classList.add('game-item');
+            gameElement.id = `game-${gameId}`;
+
+            gameElement.innerHTML = `
+                <div class="name" id="gameName-${gameId}">${gameName}</div>
+                <div class="timer" id="gameTimer-${gameId}">00:00:00</div>
+                <div class="game-buttons" id="buttons-${gameId}">
+                    <button onclick="startGameTimer(${gameId})">Start</button>
+                    <button onclick="pauseGameTimer(${gameId})">Pause</button>
+                    <button onclick="resetGameTimer(${gameId})">Reset</button>
+                    <button onclick="completeGame(${gameId})">✅</button>
+                </div>
+            `;
+
+            document.getElementById('gameList').appendChild(gameElement);
+
+            gameTimers[gameId] = { seconds: 0, interval: null, isRunning: false, isCompleted: false };
+            document.getElementById('gameNameInput').value = "";  // Reset input field
+        }
+
+        // Timer für jedes Spiel
+        const gameTimers = {};
+
+        function startGameTimer(gameId) {
+            if (gameTimers[gameId] && !gameTimers[gameId].isRunning && !gameTimers[gameId].isCompleted) {
+                gameTimers[gameId].isRunning = true;
+                gameTimers[gameId].interval = setInterval(() => {
+                    gameTimers[gameId].seconds++;
+                    document.getElementById(`gameTimer-${gameId}`).textContent = formatTime(gameTimers[gameId].seconds);
+                }, 1000);
+            }
+        }
+
+        function pauseGameTimer(gameId) {
+            if (gameTimers[gameId] && gameTimers[gameId].isRunning) {
+                clearInterval(gameTimers[gameId].interval);
+                gameTimers[gameId].isRunning = false;
+            }
+        }
+
+        function resetGameTimer(gameId) {
+            if (gameTimers[gameId]) {
+                pauseGameTimer(gameId);
+                gameTimers[gameId].seconds = 0;
+                document.getElementById(`gameTimer-${gameId}`).textContent = "00:00:00";
+            }
+        }
+
+        // Funktion zum Abschließen eines Spiels
+        function completeGame(gameId) {
+            if (gameTimers[gameId]) {
+                // Spiel als abgeschlossen markieren
+                gameTimers[gameId].isCompleted = true;
+
+                // Knöpfe ausblenden, aber Platz beibehalten
+                const buttons = document.getElementById(`buttons-${gameId}`);
+                buttons.classList.add('hidden'); // Verstecke die Knöpfe, ohne Platz zu beeinflussen
+
+                // Farbe des Spielnamens zu einem hellen Grün ändern
+                document.getElementById(`gameName-${gameId}`).classList.add('completed');
+
+                // Timer stoppen
+                pauseGameTimer(gameId);
+            }
+        }
+    </script>
+
+</body>
+</html>
